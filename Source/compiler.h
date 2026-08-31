@@ -211,6 +211,9 @@ void convertBlock(char* output, struct Block* this_block) {
 			free(preamble);
 			free(string);
 		}
+		tmp = NULL;
+		preamble = NULL;
+		string = NULL;
 	} 
 	if (this_block->c_block != NULL) {
 		//printf("Going to child\n");

@@ -16,14 +16,17 @@ Initial tape is:
 \x02 \x03
        ^
 ```
-Where ^ represents which byte the tape pointer is at.
+Where ^ represents which byte the tape pointer is at.\
+\x02 represents the start of the tape and \x03 represents the end.\
+\x03 can be rewritten as more are allocated.\
+Both of these can be overwritten in whatever way you want. I do not really recommend it though just because there isn't anything else that acts like a delimitor for the tape. Of course in a decent amount of situations that doesn't matter though.
 
 Supported Data Types (converted to bytes):
 - Unsigned Numbers,
 - Bytes (0x10),
 - Chars ('c'),
 - Strings ("hello") -> Just syntactical sugar. In this case would set the byte at tape head to 'h' and then the next to 'e' and so on. Just more convenient than manually setting all bytes.\
-        Also does the little endian nature for you.\
+        Also does the important little endian nature for you.\
         Example:\
               ```
               go 6
