@@ -96,11 +96,11 @@ void convertBlock(char* output, struct Block* this_block) {
 				if (command->value->value_type == STRING) {
 					char* string_ptr = command->value->string_val;
 					int string_length = strlen(string_ptr);
-					printf("string ptr: %s\n", string_ptr);
+					//printf("string ptr: %s\n", string_ptr);
 					char* tmp_string;
 					for (int i = 1; i < string_length - 1; i++) {
 						tmp_string = malloc(50);
-						printf("char is %c %d", *(string_ptr+i), *(string_ptr+i));
+						//printf("char is %c %d", *(string_ptr+i), *(string_ptr+i));
 						sprintf(tmp_string, "\n\tmov BYTE PTR [r12+%d], 0x%x", i - 1, *(string_ptr+i)); 
 						output = strcat(output, tmp_string);
 						free(tmp_string);
