@@ -1,0 +1,26 @@
+alloc 200
+syscall 0 0 {200} 200 
+
+go 207 
+set 0
+go 208
+
+while >0 {
+	go 206
+	set 200
+	sub [207]
+	go [206]
+	
+	if >=0x61 {
+		if <=0x7a {
+			sub 0x20
+		}
+	}
+	go 207
+	add 1
+	go 208
+	sub 1
+}
+
+syscall 1 1 {200} [207]
+syscall 60 0
