@@ -1,35 +1,40 @@
-Executable is tur. 
-Can run with ./tur file or do ./tur --help for options.
-
-Sample code is in ./sample.tur which capitalizes all letters of an input up to 200 bytes.
-
-This is a turing complete toy language that is intended to model the actions of a Turing Machine.
-Due to the way it interacts with syscalls this can technically do anything on the computer equivalent to what assembly can do.
-Probably not cross compatible outside of Linux, but haven't tested and it might be flexible enough.
+Executable is tur.\
+Can run with ./tur file or do ./tur --help for options.\
+\
+Sample code is in ./sample.tur which capitalizes all letters of an input up to 200 bytes.\
+\
+This is a turing complete toy language that is intended to model the actions of a Turing Machine.\
+Due to the way it interacts with syscalls this can technically do anything on the computer equivalent to what assembly can do.\
+Probably not cross compatible outside of Linux, but haven't tested and it might be flexible enough.\
 The compiler is written in C.
 
 It has a tape of memory and then a tape pointer.
 Each thing on the tape is a byte and can store from \x00 to \xFF.
 
 Initial tape is:
+```
 \x02 \x03
        ^
+```
 Where ^ represents which byte the tape pointer is at.
 
 Supported Data Types (converted to bytes):
-    - Unsigned Numbers,
-    - Bytes (0x10),
-    - Chars ('c'),
-    - Strings ("hello") -> Just syntactical sugar. In this case would set the byte at tape head to 'h' and then the next to 'e' and so on. Just more convenient than manually setting all bytes.
-        Also does the little endian nature for you.
-        Example:
-            go 6
-            set "hello"
-            go 1
-            set \x0a
-            syscall 1 1 {6} 6
-            syscall 60 0
-            -> Will print 'hello\n'. 
+- Unsigned Numbers,
+- Bytes (0x10),
+- Chars ('c'),
+- Strings ("hello") -> Just syntactical sugar. In this case would set the byte at tape head to 'h' and then the next to 'e' and so on. Just more convenient than manually setting all bytes.\
+        Also does the little endian nature for you.\
+        Example:\
+              ```
+              go 6
+              set "hello"
+              go 1
+              set \x0a
+              syscall 1 1 {6} 6
+              syscall 60 0
+              ```
+              -> Will print 'hello\n'.
+  
     - Dereferenced Pointers ([1]) -> Value is essentially just set to what is at memory address of 1.
         This can be used in operations like: add [2] which adds what is currently in [2] to the tape pointer byte.
     - Actual Pointers ({1}) -> Gives the actual memory address (8 bytes) of this address. This is probably only useful for certain syscalls that require buffers.
@@ -37,7 +42,7 @@ Supported Data Types (converted to bytes):
     Note that while individual bytes of memory cannot be set to numbers larger than 255, syscalls can contain those.
 
 Commands:
-    alloc x -> Increases the free memory bounds by x. Essentially moves the \x03 further to the right. Note that the original \x03 will still be in the tape.
++ alloc x -> Increases the free memory bounds by x. Essentially moves the \x03 further to the right. Note that the original \x03 will still be in the tape.
         Example: alloc 2
             Tape is now:
             \x02 \x03 \x00 \x03. 
@@ -46,13 +51,13 @@ Commands:
         
         An equivalent is dealloc x which moves the \x03 to the left by x.
 
-    set x -> Sets memory of the currently looked at byte to x.
++ set x -> Sets memory of the currently looked at byte to x.
         Example: set 0x20
             Effect on previous tape:
                 \x02 \x20 \x00 \x03
                        ^
 
-    go x -> Sets tape pointer to position x.
++ go x -> Sets tape pointer to position x.
         Example: go 2
             Effect on previous tape:
                 \x02 \x20 \x00 \x03
@@ -63,7 +68,7 @@ Commands:
         gor x -> Moves tape pointer x to the right.
         gol x -> Moves tape pointer x to the left.
     
-    add x, sub x -> Adds or subtracts tape pointing byte by x.
++ add x, sub x -> Adds or subtracts tape pointing byte by x.
         Example: add 15
             Effect on previous tape:
                 \x02 \x20 \x15 \x03.
@@ -74,7 +79,7 @@ Commands:
                 \x02 \x20 \xF1 \x03.
                             ^
     
-    syscall x1 x2 x3 x4 x5 x6 x7 -> Does a syscall with the following attributes set.
+ + syscall x1 x2 x3 x4 x5 x6 x7 -> Does a syscall with the following attributes set.
         x1 -> rax or what syscall.
         x2 - x7 represents the arguments. Technically more can be provided but will be ignored and a warning is given.
         For example:
