@@ -51,7 +51,8 @@ Commands:
             \x02 \x03 \x00 \x03. 
                    ^
         The \x02 and \x03 can be overwritten but the ones at the ends can be useful probably.
-        
+        Note the \x00 technically can be anything. Assumed to be \x00 but we aren't setting its value to that. Consider it unallocated and should be treated as such.
+
         An equivalent is dealloc x which moves the \x03 to the left by x.
 
 + set x -> Sets memory of the currently looked at byte to x.
@@ -95,6 +96,32 @@ Commands:
         This is 8-bytes. 
         Effectively alloc 8 is done and then those 8 bytes are set to the value of rax.
 
+        So if previously:
+                \x02 \x20 \x15 \x03.
+                            ^
+        and we do:
+            alloc 3
+        now:
+            \x02 \x20 \x15 \x03 \x00 \x00 \x03.
+                        ^    
+            syscall 0 0 {3} 3
+            And user inputs "r\n"
+        now (notice how it is stored backwards):
+            \x02 \x20 \x0a \x72 \x00 \x00 \x03.
+            And then rax is appended (notice the tape expands as well equivalent to alloc 8):
+            \x02 \x20 \x0a \x72 \x00 \x00 \x03 \x00 \x00 \x00 \x00 \x00 \x00 \x02 \x03
+            
+            If the user had inputted instead "ra\n" then:
+            \x02 \x20 \x0a \x61 \x72 \x00 \x03 \x00 \x00 \x00 \x00 \x00 \x00 \x03 \x03
+
+        So now the value of the actual length of input is in [14]. Notice this is beyond what was allocated initially. An example of using this to iterate is in the sample code.
+        
+        You can always dealloc to clean up this:
+            dealloc 8
+        now:
+            \x02 \x20 \x0a \x72 \x00 \x00 \x03.
+
+
 Line comments are specified by //. Multi-line comments can be done with /* */.
 
 if and while are both in this language.
@@ -136,6 +163,9 @@ Expressions:
             }
 
 As mentioned previously, a sample code (for capitalizing an input string) is in ./sample.tur. This language is simple but is not easy.
+
+GDB can be extremely helpful for debugging. Especially with like x/{number}bx $r13 to print the entire tape.
+r12 stores current tape pointer position, r13 is tape end, r14 is tape start. In terms of actual memory this is stored backwards in terms of index so it grows down starting from the end of the stack. 
 
 More features will be added in the future potentially upon demand.
 I could add arguments (as in running the program with arguments), calls to other code, and loading in code file upon demand (although it would take time).

@@ -171,7 +171,7 @@ void parseAction(struct Block* this_block) {
 	(this_block->commands + (this_block->commands_length))->action = current_token;
 	(this_block->commands + (this_block->commands_length))->syscall = NULL;
 	//printf("This is %p\n", (this_block->commands + (sizeof(struct Command) * this_block->commands_length)));
-	if (current_token == SET || current_token == ADD || current_token == SUB || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC) {
+	if (current_token == SET || current_token == ADD || current_token == SUB || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC) {
 		expect(current_token);
 	} else {
 		expect(SET);
@@ -240,7 +240,7 @@ void parseBlock(struct Block* parent_block, struct Block* this_block) {
 			this_block->s_block = condition_block;
 			condition_block->s_block = sibling_block;
 			break;
-		} else if (current_token == SET || current_token == SUB || current_token == ADD || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC) {
+		} else if (current_token == SET || current_token == SUB || current_token == ADD || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC) {
 			if (this_block->commands == NULL) {
 				this_block->commands = (struct Command*)malloc(sizeof(struct Command));
 			} else {
