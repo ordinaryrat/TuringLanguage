@@ -1,35 +1,27 @@
 alloc 200
-syscall 0 0 {200} 200 // Writing to the end of the allocated section with user input. Recall it goes backwards. 
+syscall 0 0 {1} 200 
 
-// We will work in the buffer that is created by rax being alloc and appended. Assuming under 255 since we are only reading 200, so only the final byte stores length.
-// 208 -> Currently actual length of input. Is what will be decremented and checked to be above 0.
-// 207 -> Will use to store how much already done.
-// 206 -> Will use to calculate which index to access.
-
-// x/202bx $r13 can be used in GDB to print the full tape. Helpful for understanding.
-
-go 207 
-set 0
-go 208
+go 202 
+set 1
+go 201
 
 while >0 {
-	go 206
-	set 200
-	sub [207] // Setting 206 -> 200 - [207] or like len(str) - i.
-	go [206]
+	go [202]
 	
 	if >='a' {
 		if <='z' {
 			sub 0x20
 		}
 	}
-	go 207
+
+	go 202
 	add 1
-	go 208
+	go 201
 	sub 1
 }
 
-syscall 1 1 {200} [207] // 207 now precisely stores the length so we can use that.
+go 202
+sub 1
 
-dealloc 8 // Unnecessary to do in this case, but would make it easier if this program intended to do more.
+syscall 1 1 {1} [202]
 syscall 60 0

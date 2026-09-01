@@ -55,14 +55,14 @@ bool convertValue(struct Value* this_value, char** return_value, char** preamble
 	} 	
 	if (this_value->type == POINTER) {
 		*preamble = malloc(80);
-		sprintf(*preamble, "\n\tmov r15, 0\n\tmov r15b, BYTE PTR [r14-%s]", *return_value);
+		sprintf(*preamble, "\n\tmov r15, 0\n\tmov r15b, BYTE PTR [r14+%s]", *return_value);
 		
 		free(*return_value);
 		*return_value = malloc(5);
 		sprintf(*return_value, "r15b");
 	} else if (this_value->type == LEA) {
 		*preamble = malloc(40);
-		sprintf(*preamble, "\n\tlea r15, [r14-%s]", *return_value);
+		sprintf(*preamble, "\n\tlea r15, [r14+%s]", *return_value);
 
 		free(*return_value);
 		*return_value = malloc(4);
@@ -155,16 +155,16 @@ void convertBlock(char* output, struct Block* this_block) {
 					free(tmp);
 				}
 				string = (char*)malloc(100);
-				sprintf(string, "\n\tsyscall\n\tmov rsi, rax\n\tmov rax, 8\n\tcall alloc\n\tmov [r13+1], rsi\n"); // Need to capture and 'append' return value.
+				sprintf(string, "\n\tsyscall\n\tmov rsi, rax\n\tmov rax, 8\n\tcall alloc\n\tmov [r13-8], rsi\n"); // Need to capture and 'append' return value.
 				output = strcat(output, string);
 				free(string);
 				break;
-			case GOR: // Its flipped in reality because of stack direction. Going right means going down the stack.
+			case GOR: 
 				string = (char*)malloc(40);
 				if (convertValue(command->value, &tmp, &preamble)) {
 					output = strcat(output, preamble);
 				}
-				sprintf(string, "\n\tsub r12, %s", tmp);
+				sprintf(string, "\n\tadd r12, %s", tmp);
 				output = strcat(output, string);
 				break;
 			case GOL: 
@@ -172,7 +172,7 @@ void convertBlock(char* output, struct Block* this_block) {
 				if (convertValue(command->value, &tmp, &preamble)) {
 					output = strcat(output, preamble);
 				}
-				sprintf(string, "\n\tadd r12, %s", tmp);
+				sprintf(string, "\n\tsub r12, %s", tmp);
 				output = strcat(output, string);
 				break;
 			case GO: 
@@ -181,9 +181,9 @@ void convertBlock(char* output, struct Block* this_block) {
 					output = strcat(output, preamble);
 				}
 				if (!strncmp(tmp, "r15b", 4)) {
-					sprintf(string, "\n\tmov rcx, r14\n\tsub rcx, r15\n\tmov r12, rcx");
+					sprintf(string, "\n\tmov rcx, r14\n\tadd rcx, r15\n\tmov r12, rcx");
 				} else {
-					sprintf(string, "\n\tlea r12, [r14-%s]", tmp);
+					sprintf(string, "\n\tlea r12, [r14+%s]", tmp);
 				}	
 				output = strcat(output, string);
 				break;
@@ -211,8 +211,8 @@ void convertBlock(char* output, struct Block* this_block) {
 			free(preamble);
 			free(string);
 		}
-		tmp = NULL;
 		preamble = NULL;
+		tmp = NULL;
 		string = NULL;
 	} 
 	if (this_block->c_block != NULL) {
@@ -276,7 +276,7 @@ void convertBlock(char* output, struct Block* this_block) {
 
 void compile(char** output, struct Block* initial_block) {
 	*output = malloc(3000);
-	*output = strcpy(*output, ".intel_syntax noprefix\n\n.global _start\n\ndealloc:\n\tadd r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\nalloc:\n\tsub r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\n_start:\n\tlea r13, [rsp-24]\n\tmov r14, r13\n\tsub r13, 1\n\tmov BYTE PTR [r13], 0x3\n\tmov BYTE PTR [r13+1], 0x2\n\tmov r12, r13\n\tjmp label0\x00");
+	*output = strcpy(*output, ".intel_syntax noprefix\n\n.global _start\n\ndealloc:\n\tadd r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\nalloc:\n\tadd r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\n_start:\n\tlea r14, [rsp-10000]\n\tmov r13, r14\n\tadd r13, 1\n\tmov BYTE PTR [r14], 0x2\n\tmov BYTE PTR [r14+1], 0x3\n\tmov r12, r13\n\tjmp label0\x00");
 
 	convertBlock(*output, initial_block);
 	

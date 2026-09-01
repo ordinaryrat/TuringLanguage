@@ -25,16 +25,16 @@ Supported Data Types (converted to bytes):
 - Unsigned Numbers,
 - Bytes (0x10),
 - Chars ('c'),
-- Strings ("hello") -> Just syntactical sugar. In this case would set the byte at tape head to 'h' and then the next to 'e' and so on. Just more convenient than manually setting all bytes.\
-        Also does the important little endian nature for you.\
+- Strings ("hello") -> Just syntactical sugar. In this case would set the byte at tape head to 'h' and then the next to 'e' then 'l' and so on. Just more convenient than manually setting all bytes.\
         Example:\
               ```
-              go 6
-              set "hello"
+              malloc 6
               go 1
+              set "hello"
+              go 6
               set \x0a
-              syscall 1 1 {6} 6
-              syscall 60 0
+              syscall 1 1 {1} 6
+              syscall 60 0 // Without this you get a segfault for low level reasons.
               ```
               -> Will print 'hello\n'.
   
@@ -90,7 +90,7 @@ Commands:
             syscall 60 0 -> Exit syscall.
         Some syscalls want pointers to buffers. As previously mentioned the {x} operator gives the actual memory address of a byte in the tape.
         So like:
-            syscall 1 1 {100} 10 -> Will write 10 bytes from a buffer starting at position 100.
+            syscall 1 1 {2} 10 -> Will write 10 bytes from a buffer starting at position 2.
 
         After every syscall the return value of it (rax) will be appended to the end of the tape.
         This is 8-bytes. 
@@ -106,13 +106,13 @@ Commands:
                         ^    
             syscall 0 0 {3} 3
             And user inputs "r\n"
-        now (notice how it is stored backwards):
-            \x02 \x20 \x0a \x72 \x00 \x00 \x03.
+        now:
+            \x02 \x20 \x15 \x72 \x0a \x00 \x03.
             And then rax is appended (notice the tape expands as well equivalent to alloc 8):
-            \x02 \x20 \x0a \x72 \x00 \x00 \x03 \x00 \x00 \x00 \x00 \x00 \x00 \x02 \x03
+            \x02 \x20 \x15 \x72 \x0a \x00 \x02 \x00 \x00 \x00 \x00 \x00 \x00 \x00 \x03
             
             If the user had inputted instead "ra\n" then:
-            \x02 \x20 \x0a \x61 \x72 \x00 \x03 \x00 \x00 \x00 \x00 \x00 \x00 \x03 \x03
+            \x02 \x20 \x15 \x72 \x61 \x0a \x03 \x00 \x00 \x00 \x00 \x00 \x00 \x00 \x03
 
         So now the value of the actual length of input is in [14]. Notice this is beyond what was allocated initially. An example of using this to iterate is in the sample code.
         
@@ -120,7 +120,11 @@ Commands:
             dealloc 8
         now:
             \x02 \x20 \x0a \x72 \x00 \x00 \x03.
+        
+        And to avoid a segfault do:
+            syscall 60 0
 
+            Which cleanly ends the program.
 
 Line comments are specified by //. Multi-line comments can be done with /* */.
 
@@ -164,8 +168,8 @@ Expressions:
 
 As mentioned previously, a sample code (for capitalizing an input string) is in ./sample.tur. This language is simple but is not easy.
 
-GDB can be extremely helpful for debugging. Especially with like x/{number}bx $r13 to print the entire tape.
-r12 stores current tape pointer position, r13 is tape end, r14 is tape start. In terms of actual memory this is stored backwards in terms of index so it grows down starting from the end of the stack. 
+GDB can be extremely helpful for debugging. Especially with like x/{number}bx $r14 to print the entire tape.
+r12 stores current tape pointer position, r13 is tape end, r14 is tape start. Previously this was stored backwards resulting in strings being backwards but this was fixed. Inconsistencies from that on this documentation may still exist and could be reported as an issue. 
 
 More features will be added in the future potentially upon demand.
 I could add arguments (as in running the program with arguments), calls to other code, and loading in code file upon demand (although it would take time).
