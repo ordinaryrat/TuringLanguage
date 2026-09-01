@@ -1,16 +1,19 @@
 alloc 200
-syscall 0 0 {1} 200 
+syscall 0 0 {1} 200 // Taking 200 bytes from input at a buffer starting at 1 or the byte after \x02.
 
-go 202 
+// From every syscall 8 return bytes are appended. For syscall 0 or read, the length of the read is returned.
+// Assuming only the first byte will be here (since length < 200 < 255), [201] has the returned length. The other 7 bytes will then be \x00.
+
+go 202 // Using this to find the index of next byte and get the length.
 set 1
-go 201
+go 201 // Original length is stored here. Can keep decrementing until no longer above 0.
 
 while >0 {
 	go [202]
 	
 	if >='a' {
 		if <='z' {
-			sub 0x20
+			sub 0x20 // Does 'A' -> 'a', 'B' -> 'b' etc.
 		}
 	}
 
@@ -20,8 +23,10 @@ while >0 {
 	sub 1
 }
 
-go 202
+go 202 // Since the buffer starts at 1 and thus this value starts at 1, it is 1 too long. We can decrement by this to get the actual length.
 sub 1
 
-syscall 1 1 {1} [202]
-syscall 60 0
+syscall 1 1 {1} [202] // Write to standard output syscall. Writing from {1} and writing [202] bytes or the length.
+dealloc 16 // To keep length at 200 although it does not matter for this program since it immediately ends anyways. Notice this is 16 because we have done two previous syscalls.
+
+syscall 60 0 // Cleanly exit.
