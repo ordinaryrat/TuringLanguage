@@ -1,7 +1,7 @@
 Executable is tur.\
 Can run with ./tur file or do ./tur --help for options.\
 \
-Sample code is in ./sample.tur which capitalizes all letters of an input up to 200 bytes.\
+Sample codes are in sample/. sample.tur capitalizes all letters of an input up to 200 bytes and add.tur that adds two multi digit numbers.\
 \
 This is a turing complete toy language that is intended to model the actions of a Turing Machine.\
 Due to the way it interacts with syscalls this can technically do anything on the computer equivalent to what assembly can do.\
