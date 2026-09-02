@@ -43,6 +43,9 @@ Supported Data Types (converted to bytes):
     - Actual Pointers ({1}) -> Gives the actual memory address (8 bytes) of this address. This is probably only useful for certain syscalls that require buffers.
 
     Note that while individual bytes of memory cannot be set to numbers larger than 255, syscalls can contain those.
+    
+    As of the latest update you can combine actual pointers and dereferenced ones.
+    For instance set {[4]}. This would have been impossible previously and was an oversight in designing.
 
 Commands:
 + alloc x -> Increases the free memory bounds by x. Essentially moves the \x03 further to the right. Note that the original \x03 will still be in the tape.
@@ -82,7 +85,13 @@ Commands:
             Effect on previous tape:
                 \x02 \x20 \xF1 \x03.
                             ^
-    
+
++ cpy x -> Copies current tape element to position x.
+    Example: cpy 1 
+        Effect on previous tape:
+            \x02 \xF1 \xF1 \x03.
+                        ^
+
  + syscall x1 x2 x3 x4 x5 x6 x7 -> Does a syscall with the following attributes set.
         x1 -> rax or what syscall.
         x2 - x7 represents the arguments. Technically more can be provided but will be ignored and a warning is given.

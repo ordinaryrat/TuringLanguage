@@ -7,6 +7,8 @@
 struct Token* compile_list;
 int current_compile_element = 0;
 
+int current_compile_size = 3000;
+
 char str_jump_equals[] = "je";
 char str_jump_not_equals[] = "jne";
 char str_jump_greater[] = "ja";
@@ -53,25 +55,54 @@ bool convertValue(struct Value* this_value, char** return_value, char** preamble
 		*return_value = malloc(6);
 		sprintf(*return_value, "0x%x", *(this_value->string_val + 1)); 
 	} 	
-	if (this_value->type == POINTER) {
-		*preamble = malloc(80);
+	*preamble = malloc(400);
+	bool preamble_set = false;
+	if (this_value->pointer_count > 0) {
+		//if (this_value->pointer_count > 1) {
+		//	*preamble = realloc(*preamble, 240 * this_value->pointer_count);
+		//}
 		sprintf(*preamble, "\n\tmov r15, 0\n\tmov r15b, BYTE PTR [r14+%s]", *return_value);
-		
+		for (int i = 1; i < this_value->pointer_count; i++) {
+			char* tmp = malloc(80);
+			sprintf(tmp, "\n\tmov rcx, r15\n\tadd rcx, r14\n\tmov r15b, BYTE PTR [rcx]");
+			*preamble = strcat(*preamble, tmp);
+			free(tmp);
+		}
 		free(*return_value);
 		*return_value = malloc(5);
 		sprintf(*return_value, "r15b");
-	} else if (this_value->type == LEA) {
-		*preamble = malloc(40);
-		sprintf(*preamble, "\n\tlea r15, [r14+%s]", *return_value);
-
+		preamble_set = true;
+	} 
+	if (this_value->uses_lea) {
+		if (preamble_set) {
+			char* tmp = malloc(80);
+			if (!strncmp(*return_value, "r15b", 4)) {
+				sprintf(tmp, "\n\tadd r15, r14");
+			} else {
+				sprintf(tmp, "\n\tlea r15, [r14+%s]", *return_value);
+			}
+			*preamble = strcat(*preamble, tmp);
+			free(tmp);
+		} else {
+			if (!strncmp(*return_value, "r15b", 4)) {
+				sprintf(*preamble, "\n\tadd r15, r14");
+			} else {
+				sprintf(*preamble, "\n\tlea r15, [r14+%s]", *return_value);
+			}
+		}
 		free(*return_value);
 		*return_value = malloc(4);
 		sprintf(*return_value, "r15");
 	}
-	return (bool)!(this_value->type == VALUE);
+	return (bool)(this_value->pointer_count > 0 || this_value->uses_lea);
 }
 
-void convertBlock(char* output, struct Block* this_block) {
+void convertBlock(char** output_var, struct Block* this_block) {
+	if (current_compile_size - strlen(*output_var) < 300) {
+		current_compile_size += 1000;
+		*output_var = realloc(*output_var, current_compile_size);
+	}
+	char* output = *output_var;
 	//printf("Doing block");
 	//printf("Block at %p, parent: %p, sibling: %p, child: %p\n", this_block, this_block->p_block, this_block->s_block, this_block->c_block);
 	char* label_string = malloc(15);
@@ -85,7 +116,7 @@ void convertBlock(char* output, struct Block* this_block) {
 			printf("%d: %s %s\n", i, token_names[command->action], command->value->string_val);
 		} else {
 			printf("%d: %s\n", i, token_names[command->action]);
-		}*/
+		} */
 		char* tmp; 
 		char* preamble;
 		char* string;
@@ -96,11 +127,11 @@ void convertBlock(char* output, struct Block* this_block) {
 				if (command->value->value_type == STRING) {
 					char* string_ptr = command->value->string_val;
 					int string_length = strlen(string_ptr);
-					//printf("string ptr: %s\n", string_ptr);
+					// printf("string ptr: %s\n", string_ptr);
 					char* tmp_string;
 					for (int i = 1; i < string_length - 1; i++) {
 						tmp_string = malloc(50);
-						//printf("char is %c %d", *(string_ptr+i), *(string_ptr+i));
+						// printf("char is %c %d", *(string_ptr+i), *(string_ptr+i));
 						sprintf(tmp_string, "\n\tmov BYTE PTR [r12+%d], 0x%x", i - 1, *(string_ptr+i)); 
 						output = strcat(output, tmp_string);
 						free(tmp_string);
@@ -117,6 +148,7 @@ void convertBlock(char* output, struct Block* this_block) {
 				break;
 			case ALLOC:
 				string = (char*)malloc(50);
+
 				if (convertValue(command->value, &tmp, &preamble)) {
 					output = strcat(output, preamble);
 				}
@@ -203,6 +235,18 @@ void convertBlock(char* output, struct Block* this_block) {
 				sprintf(string, "\n\tsub BYTE PTR [r12], %s", tmp);
 				output = strcat(output, string);
 				break;
+			case CPY: 
+				string = (char*)malloc(160);
+				if (convertValue(command->value, &tmp, &preamble)) {
+					output = strcat(output, preamble);
+				}
+				if (!strncmp(tmp, "r15b", 4)) {
+					sprintf(string, "\n\tmov rcx, r14\n\tadd rcx, r15\n\tmov r15, 0\n\tmov r15b, BYTE PTR [r12]\n\tmov BYTE PTR [rcx], r15b");
+				} else {
+					sprintf(string, "\n\tmov r15, 0\n\tmov r15b, BYTE PTR [r12]\n\tmov BYTE PTR [r14+%s], r15b", tmp);
+				}	
+				output = strcat(output, string);
+				break;
 			default:
 				break;
 		}
@@ -252,8 +296,8 @@ void convertBlock(char* output, struct Block* this_block) {
 		free(tmp);
 		free(preamble);
 		
-		convertBlock(output, this_block->c_block);
-		convertBlock(output, this_block->s_block);
+		convertBlock(output_var, this_block->c_block);
+		convertBlock(output_var, this_block->s_block);
 	}
 	else if (this_block->s_block != NULL) {
 		label_string = malloc(25);
@@ -261,7 +305,7 @@ void convertBlock(char* output, struct Block* this_block) {
 		output = strcat(output, label_string);
 		free(label_string);
 		
-		convertBlock(output, this_block->s_block);
+		convertBlock(output_var, this_block->s_block);
 	} else if (this_block->p_block != NULL) {
 		label_string = malloc(25);
 		if (this_block->p_block->child_condition->condition == WHILE) {
@@ -275,10 +319,11 @@ void convertBlock(char* output, struct Block* this_block) {
 }
 
 void compile(char** output, struct Block* initial_block) {
-	*output = malloc(3000);
+	*output = malloc(current_compile_size);
+	
 	*output = strcpy(*output, ".intel_syntax noprefix\n\n.global _start\n\ndealloc:\n\tadd r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\nalloc:\n\tadd r13, rax\n\tmov BYTE PTR [r13], 0x3\n\tret\n\n_start:\n\tlea r14, [rsp-10000]\n\tmov r13, r14\n\tadd r13, 1\n\tmov BYTE PTR [r14], 0x2\n\tmov BYTE PTR [r14+1], 0x3\n\tmov r12, r13\n\tjmp label0\x00");
 
-	convertBlock(*output, initial_block);
+	convertBlock(output, initial_block);
 	
 	strcat(*output, "\n\x00");
 	

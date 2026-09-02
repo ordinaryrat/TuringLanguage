@@ -68,14 +68,13 @@ int main(int argc, char** argv) {
 
 		fseek(code_file, 0, SEEK_END);
 		long size = ftell(code_file);
-		char* buffer = malloc(size * sizeof(char));
+		char* buffer = malloc(size * sizeof(char) + 1);
 		//printf("GETTING FILE SIZE: %ld\n", size);	
 		fseek(code_file, 0, SEEK_SET);
 		fread(buffer, 1, size, code_file);
 		fclose(code_file);
 		
-		*(buffer+size-1) = '\x00';
-		
+		*(buffer+size) = '\x00';
 		//printf("FILE\n%s\n\n", buffer);
 
 		/*for (int i = 0; i < size; i++) {

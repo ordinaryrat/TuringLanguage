@@ -29,6 +29,7 @@ enum TokenType {
 	SYSCALL,
 	ALLOC,
 	DEALLOC,
+	CPY,
 	GREATER,
 	GREATER_EQUAL,
 	LESS,
@@ -47,9 +48,9 @@ struct Token {
 };
 
 char* token_names[] = {
-	"STAR", "READ", "ADD", "STRING", "CHAR", "BYTE", "NUMBER", "SET", "SUB", "LBRACK", "RBRACK", "GO", "GOR", "GOL", "WHILE", "IF", "ELSE", "LBRACE", "RBRACE", "NOT", "SYSCALL", "ALLOC", "DEALLOC", "END_OF_FILE"
+	"STAR", "READ", "ADD", "STRING", "CHAR", "BYTE", "NUMBER", "SET", "SUB", "LBRACK", "RBRACK", "GO", "GOR", "GOL", "WHILE", "IF", "ELSE", "LBRACE", "RBRACE", "NOT", "SYSCALL", "ALLOC", "DEALLOC", "CPY", "END_OF_FILE"
 };
-const int token_count = 27;
+const int token_count = 28;
 
 struct Token* lexer(char* input_text) {
 	//printf("\n--- LEXING ---\n");
@@ -57,7 +58,7 @@ struct Token* lexer(char* input_text) {
 	struct Token* tokens = malloc(1 * sizeof(struct Token));
 	int found_tokens = 0;
 
-	char* str_regexes[] = {"\\*", "read", "add", "\"[^\"]*\"", "'[^\']'", "0?x([0-9]|[A-F]|[a-f]){1,16}", "[0-9]+", "set", "sub", "\\[", "\\]", "go", "gor", "gol", "while", "if", "else", "\\{", "\\}", "!", "syscall", "alloc", "dealloc", ">", ">=", "<", "<="};
+	char* str_regexes[] = {"\\*", "read", "add", "\"[^\"]*\"", "'[^\']'", "0?x([0-9]|[A-F]|[a-f]){1,16}", "[0-9]+", "set", "sub", "\\[", "\\]", "go", "gor", "gol", "while", "if", "else", "\\{", "\\}", "!", "syscall", "alloc", "dealloc", "cpy", ">", ">=", "<", "<="};
 	regex_t regexes[token_count];
 	
 	for (int i = 0; i < token_count; i++) {

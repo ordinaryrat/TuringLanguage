@@ -10,17 +10,13 @@ enum ValueFor {
 	COMMAND,
 	CALL	
 };
-enum Type {
-	VALUE,
-	POINTER,
-	LEA
-};
 
 struct Value {
 	char* string_val;
 	uint8_t size;
-	enum Type type;
 	enum TokenType value_type;
+	int pointer_count;
+	bool uses_lea;
 };
 struct Syscall {
 	uint8_t arg_count;
@@ -56,7 +52,7 @@ int block_count = 0;
 void expect(enum TokenType token_type) {
 	enum TokenType actual_token = parse_list[current_parse_element].token_val;
 	if (token_type != actual_token) {
-		printf("Syntax Error: Expecting token %s instead got %s with value '%s'", token_names[token_type], token_names[actual_token], parse_list[current_parse_element].string_val); 
+		printf("Syntax Error: Expecting token %s instead got %s with value '%s'\n", token_names[token_type], token_names[actual_token], parse_list[current_parse_element].string_val); 
 		exit(1);
 	}
 	current_parse_element++;
@@ -97,6 +93,27 @@ void parseActualValue(struct Block* this_block, enum ValueFor action) {
 		(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->value_type = current_token;
 	}
 }
+void parseBrackValue(struct Block* this_block, enum ValueFor action) {
+	//printf("Parsing brack value\n")
+	enum TokenType current_token = parse_list[current_parse_element].token_val;
+	if (current_token == LBRACK) {
+		expect(LBRACK);
+		if (action == COMMAND) {
+			(this_block->commands + this_block->commands_length)->value->pointer_count++;
+		} else if (action == CONDITION) {
+			this_block->child_condition->value->pointer_count++;
+		} else {
+			struct Command* this_command = (this_block->commands + this_block->commands_length); 
+			(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->pointer_count++;
+		}
+		//parseBrackValue(this_block, action);
+		parseActualValue(this_block, action); // Until a usecase is found or if someone wants it, I am not allowing multiple dereferencing. This can be done with cpy pretty easily now. Technically though you just need to comment this out and uncomment the above to make them allowed again.
+		expect(RBRACK);
+	} else {
+		parseActualValue(this_block, action);
+	}
+}
+
 
 void parseValue(struct Block* this_block, enum ValueFor action) {
 	//printf("Parsing value\n");
@@ -115,29 +132,35 @@ void parseValue(struct Block* this_block, enum ValueFor action) {
 		}
 		this_command->syscall->arg_count++;
 	}
-	
-	enum Type this_type = VALUE;
-	if (current_token == LBRACK) {
-		expect(LBRACK);
-		parseActualValue(this_block, action);
-		expect(RBRACK);
-		this_type = POINTER;
-	} else if (current_token == LBRACE) {
-		expect(LBRACE);
-		parseActualValue(this_block, action);
-		expect(RBRACE);
-		this_type = LEA;
-	} else {
-		parseActualValue(this_block, action);
-	}
 	if (action == COMMAND) {
-		(this_block->commands + this_block->commands_length)->value->type = this_type;
+		(this_block->commands + this_block->commands_length)->value->uses_lea = false;
+		(this_block->commands + this_block->commands_length)->value->pointer_count = 0;
 	} else if (action == CONDITION) {
-		this_block->child_condition->value->type = this_type;
+		this_block->child_condition->value->uses_lea = false;
+		this_block->child_condition->value->pointer_count = 0;
 	} else {
 		// SYSCALL
 		struct Command* this_command = (this_block->commands + this_block->commands_length); 
-		(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->type = this_type;
+		(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->uses_lea = false;
+		(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->pointer_count = 0;
+	}
+	
+	
+	if (current_token == LBRACE) {
+		expect(LBRACE);
+		if (action == COMMAND) {
+			(this_block->commands + this_block->commands_length)->value->uses_lea = true;
+		} else if (action == CONDITION) {
+			this_block->child_condition->value->uses_lea = true;
+		} else {
+			// SYSCALL
+			struct Command* this_command = (this_block->commands + this_block->commands_length); 
+			(this_command->syscall->syscall_args + (this_command->syscall->arg_count - 1))->uses_lea = true;
+		}
+		parseBrackValue(this_block, action);
+		expect(RBRACE);
+	} else {
+		parseBrackValue(this_block, action);
 	}
 }
 
@@ -171,7 +194,7 @@ void parseAction(struct Block* this_block) {
 	(this_block->commands + (this_block->commands_length))->action = current_token;
 	(this_block->commands + (this_block->commands_length))->syscall = NULL;
 	//printf("This is %p\n", (this_block->commands + (sizeof(struct Command) * this_block->commands_length)));
-	if (current_token == SET || current_token == ADD || current_token == SUB || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC) {
+	if (current_token == SET || current_token == ADD || current_token == SUB || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC || current_token == CPY) {
 		expect(current_token);
 	} else {
 		expect(SET);
@@ -240,7 +263,7 @@ void parseBlock(struct Block* parent_block, struct Block* this_block) {
 			this_block->s_block = condition_block;
 			condition_block->s_block = sibling_block;
 			break;
-		} else if (current_token == SET || current_token == SUB || current_token == ADD || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC) {
+		} else if (current_token == SET || current_token == SUB || current_token == ADD || current_token == GO || current_token == GOR || current_token == GOL || current_token == ALLOC || current_token == DEALLOC || current_token == CPY) {
 			if (this_block->commands == NULL) {
 				this_block->commands = (struct Command*)malloc(sizeof(struct Command));
 			} else {
