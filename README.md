@@ -47,6 +47,9 @@ Supported Data Types (converted to bytes):
     As of the latest update you can combine actual pointers and dereferenced ones.
     For instance set {[4]}. This would have been impossible previously and was an oversight in designing.
 
+    Another feature that was temporarily added was multiple dereferences like [[3]] where it gets the value of the value 3 points to for instance. Ultimately it was decided this was a bit too much abstraction since the tape head is being told to move multiple places at once. Additionally with the cpy command being added this can already be done quite easily (go to pointed value, cpy to known index, set value to the derference of that index). The string feature is an exception just because of how annoying it is to type a string out, and it is fully procedural anyways while pointers can go to basically random positions.
+  If there is support to revert this, it is a single comment change in the parser. 
+
 Commands:
 + alloc x -> Increases the free memory bounds by x. Essentially moves the \x03 further to the right. Note that the original \x03 will still be in the tape.
         Example: alloc 2
