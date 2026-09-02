@@ -98,7 +98,7 @@ bool convertValue(struct Value* this_value, char** return_value, char** preamble
 }
 
 void convertBlock(char** output_var, struct Block* this_block) {
-	if (current_compile_size - strlen(*output_var) < 300) {
+	if (current_compile_size - strlen(*output_var) < 800) {
 		current_compile_size += 1000;
 		*output_var = realloc(*output_var, current_compile_size);
 	}

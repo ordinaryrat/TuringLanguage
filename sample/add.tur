@@ -1,0 +1,165 @@
+alloc 30
+syscall 0 0 {1} 30
+
+go 31
+set 0x0a // Do not need the length of input so can overwrite.
+
+go 32
+set 1
+go 37
+set 1
+go 38
+set 1
+
+// 31 Will store end deliminator
+// 32 Will store general end flag 
+// 33 Will store current index of first
+// 34 Will store current index of second
+// 35 Will store current index of result
+// 36 Stores temporary results (current index, pointer cpy, overflow)
+// 37 Stores end flag for first
+// 38 Stores end flag for second 
+// 39 Stores length of output
+
+go 36
+set 1
+go [36]
+while !'+' {
+	go 36
+	add 1
+	go [36]
+}
+
+go 36
+sub 1
+cpy 33
+
+add 2
+
+go [36]
+while !0x0a {
+	go 36
+	add 1
+	go [36]
+	if 0x00 {
+		set 0x0a
+	}
+}
+
+go 36
+sub 1
+cpy 34
+
+alloc 31
+go 35
+set 69
+
+go 39
+set 0
+
+go 36
+set 0
+
+go 32
+while 1 {
+	go [35]
+	set 0
+
+	add [36]
+	
+	go 37
+	if 1 {
+		go [33]
+		if >='0' {
+			if <='9' {
+				cpy 36
+				go [35]
+				add [36]
+				sub 0x30
+			}
+		}
+		go [33]
+		if 0x02 {
+			go 37
+			set 0
+		}
+		go [33]
+		if !0x02 {
+			go 33
+			sub 1
+		}
+	}
+	
+	go 38
+	if 1 {
+		go [34]
+		if >='0' {
+			if <='9' {
+				cpy 36
+				go [35]
+				add [36]
+				sub 0x30
+			}
+		}
+		go [34]
+		if '+' {
+			go 38
+			set 0
+		}
+		go 34
+		sub 1
+	}
+		
+	go 36
+	set 0
+	go [35]
+	if >9 {
+		sub 10
+		go 36
+		set 1
+	}
+	go 35
+	sub 1
+	go 39
+	add 1
+
+	go 37
+	if 0 {
+		go 38
+		if 0 {
+			go [35]
+			if 0 {
+				go 35
+				add 1
+
+				go 39
+				sub 1
+			}
+			go 32
+			set 0
+		}
+	}
+
+	go 32
+}
+
+go 36
+set [39]
+while >0 {
+	go 31
+	set [35]
+	add [36]
+
+	go [31]
+	add 0x30
+
+	go 36
+	sub 1
+}
+
+go 35
+add 1
+
+syscall 1 1 {[35]} [39]
+
+syscall 60 0
