@@ -76,12 +76,12 @@ Commands:
         gol x -> Moves tape pointer x to the left.
     
 + add x, sub x -> Adds or subtracts tape pointing byte by x.
-        Example: add 15
+        Example: add 0x15
             Effect on previous tape:
                 \x02 \x20 \x15 \x03.
                             ^
         For subtraction, two's complement would apply.
-        Example: sub 30 
+        Example: sub 0x30 
             Effect on previous tape:
                 \x02 \x20 \xF1 \x03.
                             ^
